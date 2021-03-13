@@ -47,10 +47,9 @@ jobs:
       - run:
           name: Build front-end
           command: |
-            cd frontend
-            rm -rf node_modules/                  
-            npm install
-            npm run build    
+            cd angular8-crud-demo        
+            npm update
+            ng build    
             
       - slack/notify:
           event: fail          
@@ -58,13 +57,13 @@ jobs:
           template: basic_fail_1        
       - save_cache:
           paths:
-            - frontend/node_modules
-            - frontend/dist
+            - angular8-crud-demo/node_modules
+            - angular8-crud-demo/dist
           key: frontend-build-${CIRCLE_WORKFLOW_ID:0:7}
 
   build-backend:
     docker:
-      - image: circleci/node:13.8.0
+      - image: circleci/openjdk:11-jdk
     steps:
     - checkout
     - restore_cache:
@@ -413,26 +412,4 @@ workflows:
           requires: [build-frontend]
       - test-backend:
           requires: [build-backend]
-      - scan-backend:
-          requires: [build-backend]
-      - scan-frontend:
-          requires: [build-frontend]
-      - deploy-infrastructure:
-          requires: [test-frontend, test-backend, scan-frontend, scan-backend]
-          filters:
-            branches:
-              only: [master]
-      - configure-infrastructure:
-          requires: [deploy-infrastructure]
-      - run-migrations:
-          requires: [configure-infrastructure]
-      - deploy-frontend:
-          requires: [run-migrations]
-      - deploy-backend:
-          requires: [run-migrations]
-      - smoke-test:
-          requires: [deploy-backend, deploy-frontend]
-      - cloudfront-update:
-          requires: [smoke-test]
-      - cleanup:
-          requires: [cloudfront-update]
+      
