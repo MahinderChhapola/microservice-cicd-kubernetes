@@ -7,9 +7,9 @@ logging:
 spring:
   datasource:
     driver-class-name: com.mysql.jdbc.Driver
-    password: admin@123
-    url: jdbc:mysql://localhost/springbootdb?allowPublicKeyRetrieval=true&useSSL=false
-    username: root
+    password: Capstone21
+    url: jdbc:mysql://capstone.caejyuh3eggl.eu-west-1.rds.amazonaws.com:3306/capstone
+    username: admin
   jpa:
     hibernate:
       ddl-auto: update
