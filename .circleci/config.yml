@@ -47,7 +47,7 @@ jobs:
       - run:
           name: Build front-end
           command: |
-            export environment.baseUrl = "http://local:9095"
+            export environment.baseUrl="http://local:9095"
             cd angular8-crud-demo      
             npm install
             ng build --prod 
@@ -94,7 +94,7 @@ jobs:
                 
   test-backend:
     docker:
-      - image: circleci/node:13.8.0
+      - image: circleci/openjdk:11-jdk
     steps:
     - checkout
     - restore_cache:
