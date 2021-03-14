@@ -51,7 +51,7 @@ jobs:
           command: |            
             cd angular8-crud-demo      
             npm install
-            ng build --prod 
+            npm run build --prod 
       - save_cache:
           paths:
             - angular8-crud-demo/node_modules
@@ -67,8 +67,7 @@ jobs:
         keys:
           - v1-dependencies-{{ checksum "springboot-crud-api/pom.xml" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-    - run: mvn dependency:go-offline
+          - v1-dependencies-    
     - run:
         name: Back-end build
         command: |
@@ -103,12 +102,12 @@ jobs:
         keys: 
           - v1-dependencies-{{ checksum "springboot-crud-api/pom.xml" }}
           # fallback to using the latest cache if no exact match is found
-          - v1-dependencies-
-    - run: mvn dependency:go-offline
+          - v1-dependencies-    
     - run:
         name: Test Back-end
         command: |
-          cd springboot-crud-api          
+          cd springboot-crud-api
+          mvn dependency:go-offline        
           mvn test
           
   scan-frontend:
