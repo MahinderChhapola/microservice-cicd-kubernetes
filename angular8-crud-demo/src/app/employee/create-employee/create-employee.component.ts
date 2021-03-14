@@ -3,7 +3,7 @@ import { EmployeeService } from 'src/app/service/employee.service';
 import { Employee } from 'src/app/model/employee.model';
 
 import { Component, OnInit } from '@angular/core';
-import {FormControl, FormGroup, Validators} from "@angular/forms";
+import {FormControl, FormGroup, Validators} from '@angular/forms';
 
 import {Router} from '@angular/router';
 
@@ -19,7 +19,7 @@ export class CreateEmployeeComponent implements OnInit {
   submitted = false;
 
   constructor(private employeeService: EmployeeService,
-    private router: Router) { }
+              private router: Router) { }
 
   ngOnInit() {
   }
@@ -33,17 +33,17 @@ export class CreateEmployeeComponent implements OnInit {
     this.router.navigate(['/employees']);
   }
 
- 
+
 }
 
- 
-
-  
 
 
-  
-    
-  
-  
+
+
+
+
+
+
+
 
 

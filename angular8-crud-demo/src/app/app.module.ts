@@ -17,7 +17,7 @@ import { DataTablesModule } from 'angular-datatables';
     CreateEmployeeComponent,
     EmployeeListComponent,
     UpdateEmployeeComponent,
-    
+
 
   ],
   imports: [

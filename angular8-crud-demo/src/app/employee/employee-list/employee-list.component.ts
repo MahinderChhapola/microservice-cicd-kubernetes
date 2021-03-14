@@ -13,17 +13,17 @@ import { ApiResponse } from 'src/app/model/api.response';
 export class EmployeeListComponent implements OnInit {
 
   employees: Observable<ApiResponse>;
-  //dtOptions: DataTables.Settings = {};
-  //@ViewChild('dtOptions', {static: true}) table;
+  // dtOptions: DataTables.Settings = {};
+  // @ViewChild('dtOptions', {static: true}) table;
 
   constructor(private employeeService: EmployeeService,
-    private router: Router) { 
+              private router: Router) {
       setTimeout(function(){
         $(function(){
           $('#example').DataTable();
       });
-      },2000);
-      
+      }, 2000);
+
     }
 
   ngOnInit() {
@@ -32,7 +32,7 @@ export class EmployeeListComponent implements OnInit {
       $(function(){
         $('#example').DataTable();
     });
-    },2000);
+    }, 2000);
 
   }
 
