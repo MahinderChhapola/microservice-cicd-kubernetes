@@ -61,6 +61,10 @@ jobs:
   build-backend:
     docker:
       - image: circleci/openjdk:11-jdk
+        environment:
+          DATABASE_URL: jdbc:mysql://capstone.caejyuh3eggl.eu-west-1.rds.amazonaws.com:3306/capstone
+          DATABASE_USER: admin
+          DATABASE_PASSWORD: Capstone21
     steps:
     - checkout
     - restore_cache:
@@ -406,8 +410,8 @@ workflows:
     jobs:      
       - build-frontend
       - build-backend
-      - test-frontend:
-          requires: [build-frontend]
+      #- test-frontend:
+      #    requires: [build-frontend]
       - test-backend:
           requires: [build-backend]
       - scan-backend:
