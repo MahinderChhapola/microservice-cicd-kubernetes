@@ -60,11 +60,7 @@ jobs:
 
   build-backend:
     docker:
-      - image: circleci/openjdk:11-jdk
-        environment:
-          DATABASE_URL: jdbc:mysql://capstone.caejyuh3eggl.eu-west-1.rds.amazonaws.com:3306/capstone
-          DATABASE_USER: admin
-          DATABASE_PASSWORD: Capstone21
+      - image: circleci/openjdk:11-jdk        
     steps:
     - checkout
     - restore_cache:
@@ -75,7 +71,10 @@ jobs:
     - run:
         name: Back-end build
         command: |
-          cd springboot-crud-api        
+          cd springboot-crud-api
+          echo 'export DATABASE_URL=jdbc:mysql://capstone.caejyuh3eggl.eu-west-1.rds.amazonaws.com:3306/capstone' >> $BASH_ENV
+          echo 'export DATABASE_USER=admin' >> $BASH_ENV
+          echo 'export DATABASE_PASSWORD=Capstone21' >> $BASH_ENV      
           mvn clean install -DskipTests
     - save_cache:
           paths: 
