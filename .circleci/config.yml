@@ -150,6 +150,44 @@ jobs:
             mvn dependency:go-offline        
             mvn verify sonar:sonar
 
+   
+
+  build_and_push:
+    docker:
+      - image: circleci/openjdk:11-jdk
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Setup common environment variables
+          command: |
+            echo 'export ECR_REPOSITORY_NAME="${AWS_RESOURCE_NAME_PREFIX}"' >> $BASH_ENV
+            echo 'export FULL_IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:latest"' >> $BASH_ENV
+      - restore_cache:
+          keys: 
+            - v1-dependencies-{{ checksum "springboot-crud-api/pom.xml" }}
+            # fallback to using the latest cache if no exact match is found
+            - v1-dependencies- 
+      - run:
+          name: Install dependencies for AWS
+          command: |
+            sudo apt-get update
+            sudo apt-get -y -qq install awscli
+            sudo apt-get install python3-pip
+            sudo pip3 install --upgrade awscli
+      - run:
+          name: Build image
+          command: |
+            cd springboot-crud-api
+            mvn dependency:go-offline
+            docker build -t $FULL_IMAGE_NAME .
+      - run:
+          name: Push image
+          command: |
+            eval $(aws ecr get-login --region $AWS_DEFAULT_REGION --no-include-email)
+            docker push $FULL_IMAGE_NAME
+
+
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
