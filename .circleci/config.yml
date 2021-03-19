@@ -459,4 +459,5 @@ workflows:
       - scan-backend:
           context: SonarCloud
           requires: [build-backend]
-      
+      - build_and_push:
+          requires: [test-backend]
