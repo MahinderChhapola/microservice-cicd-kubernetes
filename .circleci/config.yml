@@ -180,6 +180,7 @@ jobs:
           command: |
             cd springboot-crud-api
             mvn dependency:go-offline
+            mvn package
             docker build -t $FULL_IMAGE_NAME .
       - run:
           name: Push image
