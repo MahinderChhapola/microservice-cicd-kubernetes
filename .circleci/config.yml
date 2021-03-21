@@ -346,8 +346,11 @@ workflows:
       #- scan-backend:
        #   context: SonarCloud
         #  requires: [build-backend]
-      - build_and_push
-         # requires: [test-backend]
+      - undeploy-application:
+          cluster-name: "capstone-employee"
+          aws-region: $AWS_DEFAULT_REGION
+      - build_and_push:
+          requires: [undeploy-application]
       #- create-eks-cluster:
        #   requires: [build_and_push]
       #- aws-eks/create-cluster:
