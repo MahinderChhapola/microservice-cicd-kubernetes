@@ -255,6 +255,7 @@ jobs:
       - run:
           name: Create deployment
           command: |
+            aws sts get-caller-identity
             cd springboot-crud-api
             ls -a
             kubectl apply -f deployment.yaml
