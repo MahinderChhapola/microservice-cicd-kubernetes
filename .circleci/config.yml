@@ -208,7 +208,95 @@ jobs:
           node-type: t2.micro
           nodes: 1
           
+  deploy-application:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
+      docker-image-name:
+        description: |
+          Name of the docker image to be deployed
+        type: string
+      version-info:
+        description: |
+          App version information
+        type: string
+      aws-region:
+        description: |
+          AWS region
+        type: string
+        default: ""
+    steps:
+      - checkout
+      - run:
+          name: Setup common environment variables
+          command: |
+            echo 'export ECR_REPOSITORY_NAME="${AWS_RESOURCE_NAME_PREFIX}"' >> $BASH_ENV
+            echo 'export FULL_IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:latest"' >> $BASH_ENV
+      - run:
+          name: Create deployment manifest
+          command: |
+            # Replace the placeholders in the manifest with the intended values.
+            # This is to avoid hardcoding the image name in the manifest, to make this
+            # demo project more portable.
+            BUILD_DATE=$(date '+%Y%m%d%H%M%S')
+            cat springboot-crud-api/deployment.yml |\
+               sed "s|DOCKER_IMAGE_NAME|$FULL_IMAGE_NAME|\
+                g;s|BUILD_DATE_VALUE|$BUILD_DATE|g;s|VERSION_INFO_VALUE|\
+                << parameters.version-info >>|g" > springboot-crud-api/deployment.yml
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+          install-kubectl: true
+          aws-region: $AWS_DEFAULT_REGION
+      - kubernetes/create-or-update-resource:
+          resource-file-path: "springboot-crud-api/deployment.yml"
+          get-rollout-status: true
+          resource-name: deployment/employeeapp
+      - kubernetes/create-or-update-resource:
+          resource-file-path: "springboot-crud-api/deployment.yml"
 
+
+  test-application:
+    executor: aws-eks/python3
+    parameters:
+      cluster-name:
+        description: |
+          Name of the EKS cluster
+        type: string
+      aws-region:
+        description: |
+          AWS region
+        type: string
+        default: ""
+      expected-version-info:
+        description: |
+          Expected app version (this is used for testing that the
+          correct version has been deployed)
+        type: string
+    steps:
+      - aws-eks/update-kubeconfig-with-authenticator:
+          cluster-name: << parameters.cluster-name >>
+          install-kubectl: true
+          aws-region: $AWS_DEFAULT_REGION
+      - run:
+          name: Wait for service to be ready
+          command: |
+            kubectl get pods
+            kubectl get services
+            sleep 30
+            for attempt in {1..20}; do
+              EXTERNAL_IP=$(kubectl get service employeeapp | awk '{print $4}' | tail -n1)
+              echo "Checking external IP: ${EXTERNAL_IP}"
+              if [ -n "${EXTERNAL_IP}" ] && [ -z $(echo "${EXTERNAL_IP}" | grep "pending") ]; then
+                break
+              fi
+              echo "Waiting for external IP to be ready: ${EXTERNAL_IP}"
+              sleep 10
+            done
+            sleep 180
+            curl -s --retry 10 "http://$EXTERNAL_IP" | grep "<< parameters.expected-version-info >>"
  
 
 workflows:
@@ -220,10 +308,22 @@ workflows:
       #    requires: [build-frontend]
       - test-backend:
           requires: [build-backend]
-      - scan-backend:
-          context: SonarCloud
-          requires: [build-backend]
+      #- scan-backend:
+       #   context: SonarCloud
+        #  requires: [build-backend]
       - build_and_push:
           requires: [test-backend]
-      - create-eks-cluster:
-          requires: [build_and_push]
+      #- create-eks-cluster:
+       #   requires: [build_and_push]
+      - deploy-application:
+          aws-region: $AWS_DEFAULT_REGION
+          docker-image-name: "${AWS_ECR_URL}/eks_orb_demo_app:${CIRCLE_SHA1}"
+          version-info: "${CIRCLE_SHA1}"
+          #requires:
+           # - aws-eks/create-cluster
+      - test-application:
+          name: test-application
+          aws-region: $AWS_DEFAULT_REGION
+          expected-version-info: "${CIRCLE_SHA1}"
+          requires:
+            - deploy-application
