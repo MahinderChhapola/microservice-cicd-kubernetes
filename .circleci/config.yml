@@ -80,10 +80,7 @@ jobs:
     - run:
         name: Back-end build
         command: |
-          cd springboot-crud-api
-          echo 'export DATABASE_URL=jdbc:mysql://capstone.caejyuh3eggl.eu-west-1.rds.amazonaws.com:3306/capstone' >> $BASH_ENV
-          echo 'export DATABASE_USER=admin' >> $BASH_ENV
-          echo 'export DATABASE_PASSWORD=Capstone21' >> $BASH_ENV
+          cd springboot-crud-api          
           source $BASH_ENV     
           mvn clean install -DskipTests
     - save_cache:
@@ -261,7 +258,7 @@ jobs:
             sed -i "s/AWS_ACCOUNT_ID/$AWS_ACCOUNT_ID/g" deployment.yaml
             sed -i "s/CIRCLE_SHA1/$CIRCLE_SHA1/g" deployment.yaml
             sed -i "s/DATABASE_USER_VALUE/$DATABASE_USER/g" deployment.yaml
-            sed -i "s/DATABASE_URL_VALUE/$DATABASE_URL/g" deployment.yaml
+            sed -i "s/DBNAME/capstone/g" deployment.yaml
             sed -i "s/DATABASE_PASSWORD_VALUE/$DATABASE_PASSWORD/g" deployment.yaml
             cat deployment.yaml
             kubectl apply -f deployment.yaml

@@ -21,7 +21,7 @@ spec:
         - name: DATABASE_USER
           value: DATABASE_USER_VALUE
         - name: DATABASE_URL
-          value: DATABASE_URL_VALUE
+          value: jdbc:mysql://DBNAME.caejyuh3eggl.eu-west-1.rds.amazonaws.com:3306/DBNAME
         - name: DATABASE_PASSWORD
           value: DATABASE_PASSWORD_VALUE
         ports:
