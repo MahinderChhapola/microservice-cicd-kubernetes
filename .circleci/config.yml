@@ -261,13 +261,11 @@ jobs:
             sed -i "s/AWS_ACCOUNT_ID/$AWS_ACCOUNT_ID/g" deployment.yaml
             cat deployment.yaml
             kubectl apply -f deployment.yaml
-            kubectl get service employee
       - run:
           name: Create service
           command: |
             cd springboot-crud-api
             kubectl apply -f service.yaml
-
 
   test-application:
     executor: aws-eks/python3
