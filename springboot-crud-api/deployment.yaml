@@ -17,5 +17,12 @@ spec:
       containers:
       - name: employee
         image: AWS_ACCOUNT_ID.dkr.ecr.eu-west-1.amazonaws.com/employeeservice:CIRCLE_SHA1
+        env:
+        - name: DATABASE_USER
+          value: DATABASE_USER_VALUE
+        - name: DATABASE_URL
+          value: DATABASE_URL_VALUE
+        - name: DATABASE_PASSWORD
+          value: DATABASE_PASSWORD_VALUE
         ports:
         - containerPort: 8080

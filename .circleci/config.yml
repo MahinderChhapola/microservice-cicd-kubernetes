@@ -260,6 +260,9 @@ jobs:
             cat deployment.yaml
             sed -i "s/AWS_ACCOUNT_ID/$AWS_ACCOUNT_ID/g" deployment.yaml
             sed -i "s/CIRCLE_SHA1/$CIRCLE_SHA1/g" deployment.yaml
+            sed -i "s/DATABASE_USER_VALUE/$DATABASE_USER/g" deployment.yaml
+            sed -i "s/DATABASE_URL_VALUE/$DATABASE_URL/g" deployment.yaml
+            sed -i "s/DATABASE_PASSWORD_VALUE/$DATABASE_PASSWORD/g" deployment.yaml
             cat deployment.yaml
             kubectl apply -f deployment.yaml
       - run:
