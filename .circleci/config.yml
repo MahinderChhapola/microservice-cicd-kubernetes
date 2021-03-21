@@ -246,6 +246,7 @@ jobs:
                sed "s|DOCKER_IMAGE_NAME|$FULL_IMAGE_NAME|\
                 g;s|BUILD_DATE_VALUE|$BUILD_DATE|g;s|VERSION_INFO_VALUE|\
                 << parameters.version-info >>|g" > springboot-crud-api/deployment.yml
+            cat springboot-crud-api/deployment.yml
       - aws-eks/update-kubeconfig-with-authenticator:
           cluster-name: << parameters.cluster-name >>
           install-kubectl: true
@@ -300,17 +301,17 @@ jobs:
 workflows:
   default:
     jobs:      
-      - build-frontend
-      - build-backend
+      #- build-frontend
+      #- build-backend
       #- test-frontend:
       #    requires: [build-frontend]
-      - test-backend:
-          requires: [build-backend]
+      #- test-backend:
+       #   requires: [build-backend]
       #- scan-backend:
        #   context: SonarCloud
         #  requires: [build-backend]
-      - build_and_push:
-          requires: [test-backend]
+      #- build_and_push:
+         # requires: [test-backend]
       #- create-eks-cluster:
        #   requires: [build_and_push]
       - deploy-application:
@@ -318,7 +319,7 @@ workflows:
           aws-region: $AWS_DEFAULT_REGION
           docker-image-name: "${AWS_ECR_URL}/eks_orb_demo_app:${CIRCLE_SHA1}"
           version-info: "${CIRCLE_SHA1}"
-          requires: [build_and_push]
+          #requires: [build_and_push]
       - test-application:
           name: test-application
           cluster-name: "capstone-employee"
