@@ -316,6 +316,7 @@ workflows:
       #- create-eks-cluster:
        #   requires: [build_and_push]
       - deploy-application:
+          cluster-name: "capstone-employee"
           aws-region: $AWS_DEFAULT_REGION
           docker-image-name: "${AWS_ECR_URL}/eks_orb_demo_app:${CIRCLE_SHA1}"
           version-info: "${CIRCLE_SHA1}"
@@ -323,6 +324,7 @@ workflows:
            # - aws-eks/create-cluster
       - test-application:
           name: test-application
+          cluster-name: "capstone-employee"
           aws-region: $AWS_DEFAULT_REGION
           expected-version-info: "${CIRCLE_SHA1}"
           requires:
