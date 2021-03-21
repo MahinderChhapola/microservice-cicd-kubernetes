@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: employeeapp
+  name: employee
   labels:
     app: employee
 spec:
   selector:
     matchLabels:
       app: employee
-  replicas: 3
+  replicas: 2
   template:
     metadata:
       labels:
@@ -17,14 +17,5 @@ spec:
       containers:
       - name: employee
         image: DOCKER_IMAGE_NAME
-        resources:
-          requests:
-            cpu: 100m
-            memory: 100Mi
-        env:
-        - name: VERSION_INFO
-          value: "VERSION_INFO_VALUE"
-        - name: BUILD_DATE
-          value: "BUILD_DATE_VALUE"
         ports:
         - containerPort: 8080
