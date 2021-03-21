@@ -243,11 +243,11 @@ jobs:
             # demo project more portable.
             cd springboot-crud-api
             BUILD_DATE=$(date '+%Y%m%d%H%M%S')
-            cat deployment.yml |\
+            cat deployment.yaml |\
                sed "s|DOCKER_IMAGE_NAME|$FULL_IMAGE_NAME|\
                 g;s|BUILD_DATE_VALUE|$BUILD_DATE|g;s|VERSION_INFO_VALUE|\
-                << parameters.version-info >>|g" > deployment.yml
-            cat deployment.yml
+                << parameters.version-info >>|g" > deployment.yaml
+            cat deployment.yaml
       - aws-eks/update-kubeconfig-with-authenticator:
           cluster-name: << parameters.cluster-name >>
           install-kubectl: true
@@ -256,7 +256,7 @@ jobs:
           name: Create deployment
           command: |
             cd springboot-crud-api
-            kubectl apply -f deployment.yml
+            kubectl apply -f deployment.yaml
 
 
   test-application:
