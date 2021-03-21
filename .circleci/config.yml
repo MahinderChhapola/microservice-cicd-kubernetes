@@ -256,6 +256,7 @@ jobs:
           name: Create deployment
           command: |
             cd springboot-crud-api
+            ls -a
             kubectl apply -f deployment.yaml
 
 
