@@ -244,7 +244,7 @@ jobs:
             cd springboot-crud-api
             pwd
             cat deployment.yaml
-            sed 's/DOCKER_IMAGE_NAME/${FULL_IMAGE_NAME}/' deployment.yaml
+            sed -i "s/DOCKER_IMAGE_NAME/${FULL_IMAGE_NAME}/g" deployment.yaml
             cat deployment.yaml
       - aws-eks/update-kubeconfig-with-authenticator:
           cluster-name: << parameters.cluster-name >>
