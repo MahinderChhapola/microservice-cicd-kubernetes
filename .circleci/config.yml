@@ -259,6 +259,7 @@ jobs:
             ls -a
             cat deployment.yaml
             sed -i "s/AWS_ACCOUNT_ID/$AWS_ACCOUNT_ID/g" deployment.yaml
+            sed -i "s/CIRCLE_SHA1/$CIRCLE_SHA1/g" deployment.yaml
             cat deployment.yaml
             kubectl apply -f deployment.yaml
       - run:
@@ -349,17 +350,17 @@ workflows:
          # requires: [test-backend]
       #- create-eks-cluster:
        #   requires: [build_and_push]
-      - aws-eks/create-cluster:
-          cluster-name: capstone-employee
-          aws-region: $AWS_DEFAULT_REGION
-          requires:
-            - build_and_push
+      #- aws-eks/create-cluster:
+       #   cluster-name: capstone-employee
+        #  aws-region: $AWS_DEFAULT_REGION
+         # requires:
+          #  - build_and_push
       - deploy-application:
           cluster-name: "capstone-employee"
           aws-region: $AWS_DEFAULT_REGION
           docker-image-name: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_SHA1}"
           version-info: "${CIRCLE_SHA1}"
-          requires: [aws-eks/create-cluster]
+        #  requires: [aws-eks/create-cluster]
       - test-application:
           name: test-application
           cluster-name: "capstone-employee"
