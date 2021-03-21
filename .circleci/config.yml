@@ -360,7 +360,7 @@ workflows:
           aws-region: $AWS_DEFAULT_REGION
           docker-image-name: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_SHA1}"
           version-info: "${CIRCLE_SHA1}"
-        #  requires: [aws-eks/create-cluster]
+          requires: [build_and_push]
       - test-application:
           name: test-application
           cluster-name: "capstone-employee"
