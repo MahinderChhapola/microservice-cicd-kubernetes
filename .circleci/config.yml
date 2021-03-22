@@ -204,6 +204,7 @@ jobs:
           nodegroup-name: ng-1
           node-type: t2.micro
           nodes: 1
+
   deploy-infrastructure:
     docker:
       - image: amazon/aws-cli
@@ -214,7 +215,7 @@ jobs:
           command: |
             yum install -y tar gzip curl
       - run:
-          name: Ensure back-end infrastructure exists
+          name: Ensure front-end infrastructure exists
           command: |
             aws cloudformation deploy \
               --template-file .circleci/files/frontend.yml \
@@ -294,7 +295,7 @@ jobs:
           command: |
             cd angular8-crud-demo
             cat src/environments/environment.prod.ts
-            aws s3 cp ./dist s3://capstone-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+            aws s3 cp ./dist s3://capstone-c2771e4 --recursive
 
   test-application:
     executor: aws-eks/python3
@@ -335,7 +336,27 @@ jobs:
             done
             sleep 180
             curl -s --retry 10 "http://$EXTERNAL_IP/api/employees" | grep "<< parameters.expected-version-info >>"
-  
+
+  smoke-test:
+    docker:
+      - image: python:3.7-alpine3.11 
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |           
+            apk add --update curl tar gzip python3 py3-pip            
+      - run:
+          name: Frontend smoke test.
+          command: |
+            FRONTEND_URL="http://capstone-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-eu-west-1.amazonaws.com/"            
+            if curl -s ${FRONTEND_URL} | grep "Welcome"
+            then
+              return 0
+            else
+              return 1
+            fi
+
   undeploy-application:
       executor: aws-eks/python3
       parameters:
@@ -365,7 +386,7 @@ jobs:
 workflows:
   default:
     jobs:
-      -  deploy-infrastructure
+      -  deploy-frontend
       #- build-frontend
       #- build-backend
       #- test-frontend:
