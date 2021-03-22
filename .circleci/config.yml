@@ -295,7 +295,7 @@ jobs:
           command: |
             cd angular8-crud-demo
             cat src/environments/environment.prod.ts
-            aws s3 cp ./dist s3://capstone-c2771e4 --recursive
+            aws s3 cp ./dist/angular8-crud-demo s3://capstone-c2771e4 --recursive
 
   test-application:
     executor: aws-eks/python3
