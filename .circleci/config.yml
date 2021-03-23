@@ -23,26 +23,8 @@ commands:
             else
             echo "AWS CLI already installed"
             fi
-            aws s3 rm s3://udapeople-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+            aws s3 rm s3://capstone-${CIRCLE_WORKFLOW_ID:0:7} --recursive
             aws cloudformation delete-stack --stack-name frontend-${CIRCLE_WORKFLOW_ID:0:7}
-            aws cloudformation delete-stack --stack-name backend-${CIRCLE_WORKFLOW_ID:0:7}  
-  
-  revert-migrations:
-    description: Revert the last migration if successfully run in the current workflow.   
-    steps:
-      - run:
-          name: Revert migrations
-          when: on_fail
-          command: |
-            SUCCESS=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" \
-            --request GET https://api.memstash.io/values/migration-${CIRCLE_WORKFLOW_ID:0:7})
-            echo "************** SUCCESS = $SUCCESS"
-            if(( $SUCCESS==1 )); 
-            then
-             cd backend
-             npm install
-             npm run migrations:revert
-            fi      
             
 jobs:
   build-frontend:
@@ -88,20 +70,6 @@ jobs:
             - ~/.m2
           key: v1-dependencies-{{ checksum "springboot-crud-api/pom.xml" }}
   
-  test-frontend:
-    docker:
-      - image: circleci/node:13.8.0
-    steps:
-      - checkout
-      - restore_cache:
-          keys: 
-            - frontend-build-${CIRCLE_WORKFLOW_ID:0:7}
-      - run:
-          name: Test front-end
-          no_output_timeout: 20m
-          command: |
-            cd angular8-crud-demo     
-            npm run test
                 
   test-backend:
     docker:
@@ -131,9 +99,9 @@ jobs:
       - run:
           name: Scan frontend
           command: |
-            cd frontend
+            cd angular8-crud-demo
             npm update        
-            npm audit fix --audit-level=critical
+            npm audit --audit-level=critical
 
   scan-backend:
     docker:
@@ -200,7 +168,7 @@ jobs:
           node-type: t2.medium
           nodes: 1
 
-  deploy-infrastructure:
+  create-infrastructure:
     docker:
       - image: amazon/aws-cli
     steps:
@@ -216,9 +184,10 @@ jobs:
               --template-file .circleci/files/frontend.yml \
               --tags project=capstone \
               --stack-name frontend-${CIRCLE_WORKFLOW_ID:0:7} \
-              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}" 
+              --parameter-overrides ID="${CIRCLE_WORKFLOW_ID:0:7}"
+      - destroy-environment
 
-  deploy-application:
+  deploy-backend:
     executor: aws-eks/python3
     parameters:
       cluster-name:
@@ -261,10 +230,9 @@ jobs:
           #  kubectl apply -f deployment.yaml
       - kubernetes/create-or-update-resource:
           resource-file-path: "springboot-crud-api/deployment.yaml"
-          get-rollout-status: false
+          get-rollout-status: true
           resource-name: deployment/employee
       - kubernetes/create-or-update-resource:
-          get-rollout-status: false
           resource-file-path: "springboot-crud-api/service.yaml"
       #- run:
        #   name: Create service
@@ -293,7 +261,7 @@ jobs:
             curl -sL https://rpm.nodesource.com/setup_10.x | bash -
             yum install nodejs npm -y
       - run:
-          name: Get backend url
+          name: Create build
           command: |
             BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/external_ip)
             BACKEND_URL=http://$BACKEND_IP
@@ -311,6 +279,7 @@ jobs:
             cd angular8-crud-demo
             cat src/environments/environment.prod.ts
             aws s3 cp ./dist/angular8-crud-demo s3://capstone-${CIRCLE_WORKFLOW_ID:0:7} --recursive
+      - destroy-environment
 
   test-application:
     executor: aws-eks/python3
@@ -355,7 +324,8 @@ jobs:
               sleep 10
             done
             sleep 180
-            curl -s --retry 10 "http://$EXTERNAL_IP/api/employees" | grep "<< parameters.expected-version-info >>"
+            echo "External IP is ready: ${EXTERNAL_IP}"
+            curl -s --retry 10 "http://$EXTERNAL_IP/api/employees" | grep "name"
 
   smoke-test:
     docker:
@@ -370,11 +340,66 @@ jobs:
           name: Frontend smoke test.
           command: |
             FRONTEND_URL="http://capstone-${CIRCLE_WORKFLOW_ID:0:7}.s3-website-eu-west-1.amazonaws.com/"            
-            if curl -s ${FRONTEND_URL} | grep "Welcome"
+            if curl -s ${FRONTEND_URL} | grep "CapstoneEmployees"
             then
               return 0
             else
               return 1
+            fi
+      - run:
+          name: Frontend smoke test.
+          command: |
+            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/external_ip)
+            echo "Checking external IP: ${BACKEND_URL}"
+            if curl -s "http://$BACKEND_IP/api/employees" | grep "name"
+            then
+              return 0
+            else
+              return 1
+            fi
+      - destroy-environment
+
+  cloudfront-update:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y gzip tar
+      - run:
+          name: Update cloudfront distribution
+          command: |
+            aws cloudformation deploy \
+            --template-file /root/project/.circleci/files/cloudfront.yml \
+            --stack-name capstone-distro \
+            --parameter-overrides WorkflowID="${CIRCLE_WORKFLOW_ID:0:7}" \
+            --tags project=capstone
+      - destroy-environment
+    
+  cleanup:
+    docker:
+      - image: amazon/aws-cli
+    steps:
+      - checkout
+      - run:
+          name: Install dependencies
+          command: |
+            yum install -y gzip tar
+      - run:
+          name: Get old stack workflow id and remove old stacks and files
+          command: |
+            export OldWorkflowID=$(aws cloudformation \
+              list-exports --query "Exports[?Name==\`WorkflowID\`].Value" \
+              --no-paginate --output text)
+            export STACKS=($(aws cloudformation list-stacks --query "StackSummaries[*].StackName" \
+              --stack-status-filter CREATE_COMPLETE --no-paginate --output text))
+            echo Old Workflow Id: "${OldWorkflowID}"
+            if [[ "${STACKS[@]}" =~ "${OldWorkflowID}" ]]
+            then
+              aws s3 rm "s3://capstone-${OldWorkflowID}" --recursive    
+              aws cloudformation delete-stack --stack-name frontend-${OldWorkflowID}         
             fi
 
   undeploy-application:
@@ -405,23 +430,20 @@ jobs:
 
 workflows:
   default:
-    jobs:      
-      - scan-backend:
-         context: SonarCloud      
-      #- build-frontend
-      #- build-backend
+    jobs: 
+      - build-frontend
+      - build-backend
       #- test-frontend:
       #    requires: [build-frontend]
-      #- test-backend:
-       #   requires: [build-backend]
-      #- scan-backend:
-       #   context: SonarCloud
-        #  requires: [build-backend]
-      #- undeploy-application:
-       #   cluster-name: "capstone-employee"
-        #  aws-region: $AWS_DEFAULT_REGION
-      #- build_and_push
-       #   requires: [undeploy-application]
+      - test-backend:
+          requires: [build-backend]
+      - scan-backend:
+          context: SonarCloud
+          requires: [build-backend]
+      - scan-frontend:
+          requires: [build-frontend]     
+      - build_and_push
+          requires: [scan-backend]
       #- create-eks-cluster:
        #   requires: [build_and_push]
       #- aws-eks/create-cluster:
@@ -429,27 +451,25 @@ workflows:
         #  aws-region: $AWS_DEFAULT_REGION
          # requires:
           #  - build_and_push
-      #- deploy-infrastructure
-      #- deploy-application:
-       #   cluster-name: "capstone-employee"
-        #  aws-region: $AWS_DEFAULT_REGION
-         # docker-image-name: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_RESOURCE_NAME_PREFIX}:${CIRCLE_SHA1}"
-          #version-info: "${CIRCLE_SHA1}"
-          #requires: [build_and_push]
-      #-  deploy-frontend:
-       #   requires: [deploy-application, deploy-infrastructure]
-      #- test-application:
-       #   name: test-application
-        #  cluster-name: "capstone-employee"
-        #  aws-region: $AWS_DEFAULT_REGION
-         # expected-version-info: "${CIRCLE_SHA1}"
-          #requires:
-          #  - deploy-application
+      - create-infrastructure
+          requires: [scan-frontend, scan-backend]
+      - deploy-backend:
+          cluster-name: "capstone-employee"
+          aws-region: $AWS_DEFAULT_REGION
+          docker-image-name: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_RESOURCE_NAME_PREFIX}:${CIRCLE_SHA1}"
+          version-info: "${CIRCLE_SHA1}"
+          requires: [build_and_push, create-infrastructure]
+      - deploy-frontend:
+          requires: [deploy-backend, create-infrastructure]
+      - smoke-test:
+          requires: [deploy-frontend, deploy-backend]
+      - cloudfront-update:
+          requires: [smoke-test]
+      - cleanup:
+          requires: [cloudfront-update]     
       #- undeploy-application:
        #   cluster-name: "capstone-employee"
-        #  aws-region: $AWS_DEFAULT_REGION
-         # requires:
-         #   - test-application
+        #  aws-region: $AWS_DEFAULT_REGION         
       #- aws-eks/delete-cluster:
        #   cluster-name: "capstone-employee"
         #  aws-region: $AWS_DEFAULT_REGION
