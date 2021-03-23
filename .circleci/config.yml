@@ -262,9 +262,10 @@ jobs:
           #  kubectl apply -f deployment.yaml
       - kubernetes/create-or-update-resource:
           resource-file-path: "springboot-crud-api/deployment.yaml"
-          get-rollout-status: true
+          get-rollout-status: false
           resource-name: deployment/employee
       - kubernetes/create-or-update-resource:
+          get-rollout-status: false
           resource-file-path: "springboot-crud-api/service.yaml"
       #- run:
        #   name: Create service
@@ -279,12 +280,8 @@ jobs:
             EXTERNAL_IP=$(kubectl get service employee | awk '{print $4}' | tail -n1)
               echo "Checking external IP: ${EXTERNAL_IP}"
               echo "Checking Workflow Id: ${CIRCLE_WORKFLOW_ID:0:7}"
-              curl -H "Content-Type: text/plain" \
-               -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" \
-               --request PUT \
-               --data ${EXTERNAL_IP} \
-               https://api.memstash.io/values/external_ip
-
+              curl -H "Content-Type: text/plain" -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request PUT --data "${EXTERNAL_IP}" https://api.memstash.io/values/external_ip
+              
   deploy-frontend:
     docker:
       - image: amazon/aws-cli
@@ -431,6 +428,7 @@ workflows:
         #  aws-region: $AWS_DEFAULT_REGION
          # requires:
           #  - build_and_push
+      - deploy-infrastructure
       - deploy-application:
           cluster-name: "capstone-employee"
           aws-region: $AWS_DEFAULT_REGION
@@ -438,7 +436,7 @@ workflows:
           version-info: "${CIRCLE_SHA1}"
           requires: [build_and_push]
       -  deploy-frontend:
-          requires: [deploy-application]
+          requires: [deploy-application, deploy-infrastructure]
       #- test-application:
        #   name: test-application
         #  cluster-name: "capstone-employee"
