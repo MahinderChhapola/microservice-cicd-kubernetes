@@ -202,7 +202,7 @@ jobs:
           cluster-name: << pipeline.parameters.cluster-name >>
           aws-region: $AWS_DEFAULT_REGION
           nodegroup-name: ng-1
-          node-type: t2.micro
+          node-type: t2.medium
           nodes: 1
 
   deploy-infrastructure:
@@ -281,11 +281,11 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            BACKEND_URL=$(kubectl get service employee | awk '{print $4}' | tail -n1)
+            BACKEND_URL=$(curl -H "token: 12345" --request GET https://api.memstash.io/values/external_ip)
             echo "Checking external IP: ${BACKEND_URL}"
             cd angular8-crud-demo
             cat src/environments/environment.prod.ts
-            sed -i "s/BACKEND_URL/$BACKEND_URL/g" 'src/environments/environment.prod.ts'
+            sed -i "s,BACKEND_URL,$BACKEND_URL,g" 'src/environments/environment.prod.ts'
             cat src/environments/environment.prod.ts
             npm install
             npm run build --prod
@@ -295,7 +295,7 @@ jobs:
           command: |
             cd angular8-crud-demo
             cat src/environments/environment.prod.ts
-            aws s3 cp ./dist s3://capstone-c2771e4 --recursive
+            aws s3 cp ./dist/angular8-crud-demo s3://capstone-c2771e4 --recursive
 
   test-application:
     executor: aws-eks/python3
@@ -328,6 +328,11 @@ jobs:
             for attempt in {1..20}; do
               EXTERNAL_IP=$(kubectl get service employee | awk '{print $4}' | tail -n1)
               echo "Checking external IP: ${EXTERNAL_IP}"
+              curl -H "Content-Type: text/plain" \
+               -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" \
+               --request PUT \
+               --data ${EXTERNAL_IP} \
+               https://api.memstash.io/values/external_ip
               if [ -n "${EXTERNAL_IP}" ] && [ -z $(echo "${EXTERNAL_IP}" | grep "pending") ]; then
                 break
               fi
@@ -385,8 +390,8 @@ jobs:
 
 workflows:
   default:
-    jobs:
-      -  deploy-frontend
+    jobs:      
+      -  deploy-frontend           
       #- build-frontend
       #- build-backend
       #- test-frontend:
