@@ -100,7 +100,7 @@ jobs:
           command: |
             cd angular8-crud-demo
             npm update        
-            npm audit --audit-level=critical
+            npm audit --audit-level=high
 
   scan-backend:
     docker:
