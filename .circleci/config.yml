@@ -4,6 +4,7 @@ orbs:
   aws-eks: circleci/aws-eks@0.2.0
   aws-ecr: circleci/aws-ecr@3.1.0
   kubernetes: circleci/kubernetes@0.3.0
+  sonarcloud: extendaretail/sonarcloud@0.0.2
 
 parameters:
   cluster-name:
@@ -149,9 +150,8 @@ jobs:
           name: Analyze on SonarCloud
           command: |
             cd springboot-crud-api
-            mvn dependency:go-offline        
-            mvn verify sonar:sonar
-
+            mvn package
+            - sonarcloud/scan_with_maven
    
 
   build_and_push:
@@ -407,7 +407,12 @@ jobs:
 workflows:
   default:
     jobs:      
-                
+      - scan-backend:
+         context: sonarcloud
+      - sonarcloud/check_quality_gate:
+          context: sonarcloud
+          requires:
+            - scan-backend
       #- build-frontend
       #- build-backend
       #- test-frontend:
@@ -420,7 +425,7 @@ workflows:
       #- undeploy-application:
        #   cluster-name: "capstone-employee"
         #  aws-region: $AWS_DEFAULT_REGION
-      - build_and_push
+      #- build_and_push
        #   requires: [undeploy-application]
       #- create-eks-cluster:
        #   requires: [build_and_push]
@@ -429,15 +434,15 @@ workflows:
         #  aws-region: $AWS_DEFAULT_REGION
          # requires:
           #  - build_and_push
-      - deploy-infrastructure
-      - deploy-application:
-          cluster-name: "capstone-employee"
-          aws-region: $AWS_DEFAULT_REGION
-          docker-image-name: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_RESOURCE_NAME_PREFIX}:${CIRCLE_SHA1}"
-          version-info: "${CIRCLE_SHA1}"
-          requires: [build_and_push]
-      -  deploy-frontend:
-          requires: [deploy-application, deploy-infrastructure]
+      #- deploy-infrastructure
+      #- deploy-application:
+       #   cluster-name: "capstone-employee"
+        #  aws-region: $AWS_DEFAULT_REGION
+         # docker-image-name: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_RESOURCE_NAME_PREFIX}:${CIRCLE_SHA1}"
+          #version-info: "${CIRCLE_SHA1}"
+          #requires: [build_and_push]
+      #-  deploy-frontend:
+       #   requires: [deploy-application, deploy-infrastructure]
       #- test-application:
        #   name: test-application
         #  cluster-name: "capstone-employee"
