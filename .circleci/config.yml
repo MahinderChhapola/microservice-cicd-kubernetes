@@ -117,11 +117,7 @@ jobs:
         name: Test Back-end
         command: |
           cd springboot-crud-api
-          mvn dependency:go-offline
-          echo 'export DATABASE_URL=jdbc:mysql://capstone.caejyuh3eggl.eu-west-1.rds.amazonaws.com:3306/capstone' >> $BASH_ENV
-          echo 'export DATABASE_USER=admin' >> $BASH_ENV
-          echo 'export DATABASE_PASSWORD=Capstone21' >> $BASH_ENV
-          source $BASH_ENV     
+          mvn dependency:go-offline            
           mvn test
           
   scan-frontend:
@@ -252,20 +248,42 @@ jobs:
       - run:
           name: Create deployment
           command: |
+            FULL_IMAGE_NAME="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_RESOURCE_NAME_PREFIX}:${CIRCLE_SHA1}"
             cd springboot-crud-api
             cat deployment.yaml
-            sed -i "s/AWS_ACCOUNT_ID/$AWS_ACCOUNT_ID/g" deployment.yaml
-            sed -i "s/CIRCLE_SHA1/$CIRCLE_SHA1/g" deployment.yaml
-            sed -i "s/DATABASE_USER_VALUE/$DATABASE_USER/g" deployment.yaml
-            sed -i "s/DBNAME/$DBNAME/g" deployment.yaml
-            sed -i "s/DATABASE_PASSWORD_VALUE/$DATABASE_PASSWORD/g" deployment.yaml
+            BUILD_DATE=$(date '+%Y%m%d%H%M%S')
+            sed -i "s,DOCKER_IMAGE_NAME,$FULL_IMAGE_NAME,g" deployment.yaml
+            sed -i "s,DATABASE_URL_VALUE,$DATABASE_URL,g" deployment.yaml
+            sed -i "s,DATABASE_USER_VALUE,$DATABASE_USER,g" deployment.yaml            
+            sed -i "s,DATABASE_PASSWORD_VALUE,$DATABASE_PASSWORD,g" deployment.yaml
+            sed -i "s,VERSION_INFO_VALUE,<< parameters.version-info >>,g" deployment.yaml
+            sed -i "s,BUILD_DATE_VALUE,$BUILD_DATE,g" deployment.yaml
             cat deployment.yaml
-            kubectl apply -f deployment.yaml
+          #  kubectl apply -f deployment.yaml
+      - kubernetes/create-or-update-resource:
+          resource-file-path: "springboot-crud-api/deployment.yaml"
+          get-rollout-status: true
+          resource-name: deployment/employee
+      - kubernetes/create-or-update-resource:
+          resource-file-path: "springboot-crud-api/service.yaml"
+      #- run:
+       #   name: Create service
+        #  command: |
+         #   cd springboot-crud-api
+          #  kubectl apply -f service.yaml
       - run:
-          name: Create service
+          name: Get pods and services 
           command: |
-            cd springboot-crud-api
-            kubectl apply -f service.yaml
+            kubectl get pods
+            kubectl get services
+            EXTERNAL_IP=$(kubectl get service employee | awk '{print $4}' | tail -n1)
+              echo "Checking external IP: ${EXTERNAL_IP}"
+              echo "Checking Workflow Id: ${CIRCLE_WORKFLOW_ID:0:7}"
+              curl -H "Content-Type: text/plain" \
+               -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" \
+               --request PUT \
+               --data ${EXTERNAL_IP} \
+               https://api.memstash.io/values/external_ip
 
   deploy-frontend:
     docker:
@@ -281,7 +299,7 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            BACKEND_URL=$(curl -H "token: 12345" --request GET https://api.memstash.io/values/external_ip)
+            BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/external_ip)
             echo "Checking external IP: ${BACKEND_URL}"
             cd angular8-crud-demo
             cat src/environments/environment.prod.ts
@@ -295,7 +313,7 @@ jobs:
           command: |
             cd angular8-crud-demo
             cat src/environments/environment.prod.ts
-            aws s3 cp ./dist/angular8-crud-demo s3://capstone-c2771e4 --recursive
+            aws s3 cp ./dist/angular8-crud-demo s3://capstone-${CIRCLE_WORKFLOW_ID:0:7} --recursive
 
   test-application:
     executor: aws-eks/python3
@@ -391,7 +409,7 @@ jobs:
 workflows:
   default:
     jobs:      
-      -  deploy-frontend           
+                
       #- build-frontend
       #- build-backend
       #- test-frontend:
@@ -404,7 +422,7 @@ workflows:
       #- undeploy-application:
        #   cluster-name: "capstone-employee"
         #  aws-region: $AWS_DEFAULT_REGION
-      #- build_and_push:
+      - build_and_push
        #   requires: [undeploy-application]
       #- create-eks-cluster:
        #   requires: [build_and_push]
@@ -413,12 +431,14 @@ workflows:
         #  aws-region: $AWS_DEFAULT_REGION
          # requires:
           #  - build_and_push
-      #- deploy-application:
-       #   cluster-name: "capstone-employee"
-        #  aws-region: $AWS_DEFAULT_REGION
-         # docker-image-name: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${ECR_REPOSITORY_NAME}:${CIRCLE_SHA1}"
-          #version-info: "${CIRCLE_SHA1}"
-          #requires: [build_and_push]
+      - deploy-application:
+          cluster-name: "capstone-employee"
+          aws-region: $AWS_DEFAULT_REGION
+          docker-image-name: "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com/${AWS_RESOURCE_NAME_PREFIX}:${CIRCLE_SHA1}"
+          version-info: "${CIRCLE_SHA1}"
+          requires: [build_and_push]
+      -  deploy-frontend:
+          requires: [deploy-application]
       #- test-application:
        #   name: test-application
         #  cluster-name: "capstone-employee"
