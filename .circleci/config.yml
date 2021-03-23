@@ -4,7 +4,6 @@ orbs:
   aws-eks: circleci/aws-eks@0.2.0
   aws-ecr: circleci/aws-ecr@3.1.0
   kubernetes: circleci/kubernetes@0.3.0
-  sonarcloud: sonarsource/sonarcloud@1.0.2
 
 parameters:
   cluster-name:
@@ -150,8 +149,8 @@ jobs:
           name: Analyze on SonarCloud
           command: |
             cd springboot-crud-api
-            mvn package
-            - sonarcloud/scan
+            mvn dependency:go-offline        
+            mvn verify sonar:sonar
    
 
   build_and_push:
@@ -408,7 +407,7 @@ workflows:
   default:
     jobs:      
       - scan-backend:
-         context: sonarcloud      
+         context: SonarCloud      
       #- build-frontend
       #- build-backend
       #- test-frontend:
