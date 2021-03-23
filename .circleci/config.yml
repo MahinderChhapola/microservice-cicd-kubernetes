@@ -442,7 +442,7 @@ workflows:
           requires: [build-backend]
       - scan-frontend:
           requires: [build-frontend]     
-      - build_and_push
+      - build_and_push:
           requires: [scan-backend]
       #- create-eks-cluster:
        #   requires: [build_and_push]
@@ -451,7 +451,7 @@ workflows:
         #  aws-region: $AWS_DEFAULT_REGION
          # requires:
           #  - build_and_push
-      - create-infrastructure
+      - create-infrastructure:
           requires: [scan-frontend, scan-backend]
       - deploy-backend:
           cluster-name: "capstone-employee"
