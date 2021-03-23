@@ -296,7 +296,8 @@ jobs:
       - run:
           name: Get backend url
           command: |
-            BACKEND_URL=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/external_ip)
+            BACKEND_IP=$(curl -H "token: ${CIRCLE_WORKFLOW_ID:0:7}" --request GET https://api.memstash.io/values/external_ip)
+            BACKEND_URL=http://$BACKEND_IP
             echo "Checking external IP: ${BACKEND_URL}"
             cd angular8-crud-demo
             cat src/environments/environment.prod.ts
