@@ -29,9 +29,7 @@ commands:
 jobs:
   build-frontend:
     docker:
-      - image: circleci/node:13.8.0
-        environment:
-          baseUrl: http://local:9095
+      - image: circleci/node:13.8.0        
     steps:
       - checkout
       - restore_cache:
@@ -464,8 +462,8 @@ workflows:
           requires: [deploy-frontend, deploy-backend]
       - cloudfront-update:
           requires: [smoke-test]
-      - cleanup:
-          requires: [cloudfront-update]     
+      #- cleanup:
+       #   requires: [cloudfront-update]     
       #- undeploy-application:
        #   cluster-name: "capstone-employee"
         #  aws-region: $AWS_DEFAULT_REGION         
