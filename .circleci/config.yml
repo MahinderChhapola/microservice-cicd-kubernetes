@@ -85,6 +85,37 @@ jobs:
           mvn dependency:go-offline            
           mvn test
           
+  lint-application:
+    docker:
+      - image: circleci/node:13.8.0
+    steps:
+      - checkout
+      - restore_cache:
+          keys: 
+            - frontend-build-${CIRCLE_WORKFLOW_ID:0:7}
+      - run:
+          name: Scan frontend
+          command: |
+            cd angular8-crud-demo
+            npm update        
+            npm run lint
+
+  lint-docker:
+    docker:
+      - image: python:3.7.3-stretch
+    steps:
+      - checkout
+      - run:
+          name : install hado Lint 
+          command: | 
+            wget -O /bin/hadolint https://github.com/hadolint/hadolint/releases/download/v1.16.3/hadolint-Linux-x86_64 &&\
+            chmod +x /bin/hadolint
+      - run:
+          name : Hadolint 
+          command: |
+            cd springboot-crud-api
+            hadolint Dockerfile
+
   scan-frontend:
     docker:
       - image: circleci/node:13.8.0
@@ -438,9 +469,13 @@ workflows:
           context: SonarCloud
           requires: [build-backend]
       - scan-frontend:
-          requires: [build-frontend]     
-      - build_and_push:
+          requires: [build-frontend]
+      - lint-application:
+          requires: [build-frontend]
+      - lint-docker:
           requires: [scan-backend]
+      - build_and_push:
+          requires: [lint-application, lint-docker]
       #- create-eks-cluster:
        #   requires: [build_and_push]
       #- aws-eks/create-cluster:
