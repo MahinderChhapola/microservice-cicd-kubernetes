@@ -18,25 +18,25 @@ export class EmployeeListComponent implements OnInit {
 
   constructor(private employeeService: EmployeeService,
               private router: Router) {
-      setTimeout(function(){
-        $(function(){
+      setTimeout(() => {
+        $(() => {
           $('#example').DataTable();
       });
       }, 2000);
 
     }
 
-  ngOnInit() {
+  ngOnInit(): any {
     this.employees = this.employeeService.getEmployees();
-    setTimeout(function(){
-      $(function(){
+    setTimeout(() => {
+      $(() => {
         $('#example').DataTable();
     });
     }, 2000);
 
   }
 
-  deleteEmployee(id: number) {
+  deleteEmployee(id: number): void {
     this.employeeService.deleteEmployee(id)
       .subscribe(
         data => {
@@ -46,7 +46,7 @@ export class EmployeeListComponent implements OnInit {
         error => console.log(error));
   }
 
-  updateEmployee(id: number){
+  updateEmployee(id: number): void{
     this.router.navigate(['update', id]);
   }
 

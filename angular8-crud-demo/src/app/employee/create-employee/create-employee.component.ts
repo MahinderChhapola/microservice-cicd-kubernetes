@@ -21,11 +21,11 @@ export class CreateEmployeeComponent implements OnInit {
   constructor(private employeeService: EmployeeService,
               private router: Router) { }
 
-  ngOnInit() {
+  ngOnInit(): any {
   }
 
 
-  onSubmit() {
+  onSubmit(): any {
     this.submitted = true;
     this.employeeService.createEmployee(this.employee)
     .subscribe(data => console.log(data), error => console.log(error));

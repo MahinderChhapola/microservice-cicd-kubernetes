@@ -29,7 +29,7 @@ export class UpdateEmployeeComponent implements OnInit {
       }, error => console.log(error));
   }
 
-  onSubmit() {
+  onSubmit(): any {
     this.employeeService.updateEmployee(this.id, this.employee)
       .subscribe(data => console.log(data), error => console.log(error));
     this.employee = new Employee();
@@ -37,7 +37,7 @@ export class UpdateEmployeeComponent implements OnInit {
     }
 
 
-  list(){
+  list(): any{
     this.router.navigate(['employees']);
   }
 }
